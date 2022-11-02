@@ -7,6 +7,7 @@ use rcgen::{
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::atomic::AtomicPtr;
+use std::sync::Arc;
 
 /// Test cache, which generates a certificates for ACME incompatible test environments.
 /// ```rust
@@ -19,9 +20,10 @@ use std::sync::atomic::AtomicPtr;
 ///     config = config.cache(TestCache::new());
 /// }
 /// ```
+#[derive(Clone)]
 pub struct TestCache<EC: Debug = std::io::Error, EA: Debug = std::io::Error> {
-    ca: rcgen::Certificate,
-    ca_pem: String,
+    ca_cert: Arc<rcgen::Certificate>,
+    ca_pem: Arc<String>,
     _cert_error: PhantomData<AtomicPtr<Box<EC>>>,
     _account_error: PhantomData<AtomicPtr<Box<EA>>>,
 }
@@ -40,11 +42,11 @@ impl<EC: Debug, EA: Debug> TestCache<EC, EA> {
         params.not_before = date_time_ymd(2000, 1, 1);
         params.not_after = date_time_ymd(3000, 1, 1);
 
-        let ca = rcgen::Certificate::from_params(params).unwrap();
-        let ca_pem = ca.serialize_pem().unwrap();
+        let ca_cert = rcgen::Certificate::from_params(params).unwrap();
+        let ca_pem = ca_cert.serialize_pem().unwrap();
         Self {
-            ca,
-            ca_pem,
+            ca_cert: ca_cert.into(),
+            ca_pem: ca_pem.into(),
             _cert_error: Default::default(),
             _account_error: Default::default(),
         }
@@ -76,7 +78,7 @@ impl<EC: Debug, EA: Debug> CertCache for TestCache<EC, EA> {
                 return Ok(None);
             }
         };
-        let cert_pem = match cert.serialize_pem_with_signer(&self.ca) {
+        let cert_pem = match cert.serialize_pem_with_signer(&self.ca_cert) {
             Ok(pem) => pem,
             Err(err) => {
                 log::error!("test cache: signing error: {:?}", err);
