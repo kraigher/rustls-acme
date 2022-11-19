@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 use std::sync::atomic::AtomicPtr;
 use std::sync::Arc;
 
-/// Test cache, which generates a certificates for ACME incompatible test environments.
+/// Test cache, which generates certificates for ACME incompatible test environments.
 /// ```rust
 /// # use rustls_acme::{AcmeConfig};
 /// # use rustls_acme::caches::{DirCache, TestCache};
